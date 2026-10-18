@@ -1,5 +1,7 @@
 # LPBridge：合法机队到有理数弱对偶的衔接
 
+最新进展：具体证书数值和至多三机排除已在 [Case1 内核闭合报告](CASE1_KERNEL_CLOSURE_STATUS.md) 中完成。以下保留本阶段当时的结果与边界，未完成事项请以最新报告为准。
+
 日期：2026-10-18。源码：[LPBridge.lean](../LeanCompletion/UAV/LPBridge.lean)。
 
 后续进度：固定 Case1 数据绑定、32 个割合法性和具体三机弱对偶调用已由 `Case1Data.lean` 完成，见 [Case1 固定实例验收报告](CASE1_DATA_STATUS.md)。本文保留 LPBridge 阶段的验证与停止点，下文“剩余问题”描述该阶段当时的状态。

@@ -2,11 +2,17 @@
 
 更新日期：2026-10-18。本文区分各阶段实际执行的验证。本次发布汇总此前本地完成的检查，不将发布操作表述为新执行的 Lean 编译。
 
-本分支收录九个证明模块：[WeakDuality.lean](../LeanCompletion/UAV/WeakDuality.lean)、[Flow.lean](../LeanCompletion/UAV/Flow.lean)、[RouteToFlow.lean](../LeanCompletion/UAV/RouteToFlow.lean)、[TotalFlow.lean](../LeanCompletion/UAV/TotalFlow.lean)、[Connectivity.lean](../LeanCompletion/UAV/Connectivity.lean)、[LPBridge.lean](../LeanCompletion/UAV/LPBridge.lean)、[Case1Data.lean](../LeanCompletion/UAV/Case1Data.lean)、[Case1Distance.lean](../LeanCompletion/UAV/Case1Distance.lean)、[Case1Budget.lean](../LeanCompletion/UAV/Case1Budget.lean)。均使用 `UAVProof` 及其子命名空间，复用固定版本的 Mathlib。
+本分支收录十三个证明模块：[WeakDuality.lean](../LeanCompletion/UAV/WeakDuality.lean)、[Flow.lean](../LeanCompletion/UAV/Flow.lean)、[RouteToFlow.lean](../LeanCompletion/UAV/RouteToFlow.lean)、[TotalFlow.lean](../LeanCompletion/UAV/TotalFlow.lean)、[Connectivity.lean](../LeanCompletion/UAV/Connectivity.lean)、[LPBridge.lean](../LeanCompletion/UAV/LPBridge.lean)、[Case1Data.lean](../LeanCompletion/UAV/Case1Data.lean)、[Case1Distance.lean](../LeanCompletion/UAV/Case1Distance.lean)、[Case1Budget.lean](../LeanCompletion/UAV/Case1Budget.lean)、[Case1Certificate.lean](../LeanCompletion/UAV/Case1Certificate.lean)、[Case1Numerics.lean](../LeanCompletion/UAV/Case1Numerics.lean)、[Case1Fleet.lean](../LeanCompletion/UAV/Case1Fleet.lean)、[Case1Infeasible.lean](../LeanCompletion/UAV/Case1Infeasible.lean)。均使用 `UAVProof` 及其子命名空间，复用固定版本的 Mathlib。
 
-已完成任意有限机队的访问次数、基地出入次数、流量守恒、无自环、容量、连通性割，以及自然数边流到有理数 LP 的结构性衔接。`UAVProof.Case1Data.three_routes_weak_duality` 用固定 Case1 数据调用 `LPBridge.legalFleet_weak_duality`，得到具体有理数表达式的路线成本下界。新增模块将该成本连接到真实欧氏距离，并从逐机工作时间推出 1155 公里预算。`Case1Budget.three_routes_infeasible_of_certificate` 得到条件性三机矛盾，仍要求具体证书数值下界作为显式前提；详见 [距离与预算验收报告](CASE1_PHYSICAL_BUDGET_STATUS.md)。
+已完成任意有限机队的访问次数、基地出入次数、流量守恒、无自环、容量、连通性割，以及自然数边流到有理数 LP 的结构性衔接。`UAVProof.Case1Data.three_routes_weak_duality` 用固定 Case1 数据调用 `LPBridge.legalFleet_weak_duality`，得到具体有理数表达式的路线成本下界。新增模块将该成本连接到真实欧氏距离，并从逐机工作时间推出 1155 公里预算。此前 `Case1Budget.three_routes_infeasible_of_certificate` 的数值前提现已由 `Case1Certificate.certificate_value` 闭合。最终入口 `Case1Infeasible.feasible_fleet_card_ge_four` 不再需要数值假设，并统一排除 0–3 架；详见 [证书数值闭合与至多三机排除](CASE1_KERNEL_CLOSURE_STATUS.md)。
 
 ## 已证明的结果
+
+### 最新阶段：数值闭合与至少四机
+
+`Case1Certificate.certificate_value` 在 Lean 内核中证明具体证书等于 `2316798209 / 2` 个百万分之一公里，即 1158.3991045 公里。`Case1Fleet` 证明车辆数减少时的保守下界，`Case1Infeasible` 将其与逐机九小时时限比较，证明当前模型下至少四架。四个新模块及十个关键定理的传递公理审计已在原验证环境通过，依赖仅有 `propext`、`Classical.choice`、`Quot.sound`；发布时只核对源码与记录，没有重跑检查。
+
+用户于 2026-10-18 提供的四机独立 Python 可行性验证为 PASS、`FeasibleExitCode=0`。结合 Lean 下界，可得指定模型下最少四架的混合验证结论；四机可行见证尚未在 Lean 内核中形式化。
 
 ### 通用有限维弱对偶
 
@@ -194,7 +200,7 @@ totalRouteFlow(i,i) = 0,
 
 本次发布没有重跑 Lean，也没有重新计算证书下界。附加批量运行时导出已中止，不计为 PASS。原始记录保留在本地忽略目录 `verification/runs/case1-data-20261018/`，未上传。
 
-### 距离与预算阶段记录（本次收录）
+### 距离与预算阶段记录（提交 419c0df 的结果）
 
 | 检查 | 实际结果 |
 | --- | --- |
@@ -209,10 +215,10 @@ totalRouteFlow(i,i) = 0,
 
 - Lean：`leanprover/lean4:v4.30.0-rc2`，Windows x86_64；Lean 提交 `3dc1a088b6d2d8eafe25a7cd7ec7b58d731bd7cc`。
 - Mathlib：`5450b53e5ddc75d46418fabb605edbf36bd0beb6`，已核对本地依赖的 HEAD。
-- 原验证工程：[jsp-001022-lean-extension](https://github.com/huam54925-cpu/jsp-001022-lean-extension/tree/e04a61f1be1219c27f43c0bf3182794654b57f99)。其 `lean-toolchain`、`lakefile.toml`、`lake-manifest.json` 与该提交一致。九个 UAV 源文件以本分支收录的版本为准。
-- 原工程的 Prim 依赖固定为 `a303f6bd23bb8f29a833d1d70327528359180995`；这九个源文件没有直接导入 Prim。
+- 原验证工程：[jsp-001022-lean-extension](https://github.com/huam54925-cpu/jsp-001022-lean-extension/tree/e04a61f1be1219c27f43c0bf3182794654b57f99)。其 `lean-toolchain`、`lakefile.toml`、`lake-manifest.json` 与该提交一致。十三个 UAV 源文件以本分支收录的版本为准。
+- 原工程的 Prim 依赖固定为 `a303f6bd23bb8f29a833d1d70327528359180995`；这十三个源文件没有直接导入 Prim。
 
-本分支没有另建 Lake 工程。复现时，使用上述固定版本的原验证工程并准备对应依赖与 Mathlib 编译缓存，将九个源文件复制到其 `LeanCompletion/UAV/` 目录，在该工程根目录执行以下命令。先生成导入所需的 `.olean`，避免只检查源文件却缺少下游模块可用的编译产物：
+本分支没有另建 Lake 工程。复现时，使用上述固定版本的原验证工程并准备对应依赖与 Mathlib 编译缓存，将十三个源文件复制到其 `LeanCompletion/UAV/` 目录，在该工程根目录执行以下命令。先生成导入所需的 `.olean`，避免只检查源文件却缺少下游模块可用的编译产物：
 
 ```powershell
 New-Item -ItemType Directory -Force .lake/build/lib/lean/LeanCompletion/UAV | Out-Null
@@ -232,8 +238,16 @@ lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/Case1Data.olean LeanCom
 if ($LASTEXITCODE -ne 0) { throw 'Case1Data compilation failed' }
 lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/Case1Distance.olean LeanCompletion/UAV/Case1Distance.lean
 if ($LASTEXITCODE -ne 0) { throw 'Case1Distance compilation failed' }
-lake env lean LeanCompletion/UAV/Case1Budget.lean
+lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/Case1Budget.olean LeanCompletion/UAV/Case1Budget.lean
 if ($LASTEXITCODE -ne 0) { throw 'Case1Budget compilation failed' }
+lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/Case1Certificate.olean LeanCompletion/UAV/Case1Certificate.lean
+if ($LASTEXITCODE -ne 0) { throw 'Case1Certificate compilation failed' }
+lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/Case1Numerics.olean LeanCompletion/UAV/Case1Numerics.lean
+if ($LASTEXITCODE -ne 0) { throw 'Case1Numerics compilation failed' }
+lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/Case1Fleet.olean LeanCompletion/UAV/Case1Fleet.lean
+if ($LASTEXITCODE -ne 0) { throw 'Case1Fleet compilation failed' }
+lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/Case1Infeasible.olean LeanCompletion/UAV/Case1Infeasible.lean
+if ($LASTEXITCODE -ne 0) { throw 'Case1Infeasible compilation failed' }
 ```
 
 公理审计可在各文件的临时副本末尾追加对应定理的 `#print axioms UAVProof.<定理名>`，再执行 `lake env lean <副本路径>`。`LegalRoute` 下的定理需要使用 `UAVProof.LegalRoute.<定理名>`。全部定理名在上表列出；临时副本和输出应放在忽略目录中。示例核心审计指令为：
@@ -251,12 +265,13 @@ if ($LASTEXITCODE -ne 0) { throw 'Case1Budget compilation failed' }
 #print axioms UAVProof.Case1Distance.costUnits_km_le_distance
 #print axioms UAVProof.Case1Budget.three_routes_distance_budget
 #print axioms UAVProof.Case1Budget.three_routes_infeasible_of_certificate
+#print axioms UAVProof.Case1Certificate.certificate_value
+#print axioms UAVProof.Case1Infeasible.at_most_three_infeasible
+#print axioms UAVProof.Case1Infeasible.feasible_fleet_card_ge_four
 ```
 
-## 尚未完成的证明衔接
+## 结论与尚未完成的形式化
 
-已完成合法路线到有理数 LP 弱对偶的通用结构性连接、Case1 固定参数实例化、保守成本与真实欧氏距离的比较，以及工作时间到 1155 公里预算的推导。具体证书表达式的数值仍未在 Lean 内核中证明。全量成本对应已有独立 Python 检查；此前中止的运行时导出不改标为 PASS。排除至多三架实际工作时，仍需补足少于三条非空路线的数值下界，并核对原题的精确覆盖约定。
+当前固定实例及路线/时间模型下，Lean 已证明至多三架不可能满足要求，即至少需要四架。此前用户提供的独立 Python 四机可行见证验证给出至多四架；两者构成最少四架的混合验证结果。本次发布未重新运行这些检查，早期中止的运行时导出仍不计为 PASS。
 
-用户已报告 Case1 独立精确有理数验证器输出 `Independent exact-rational certificate PASS`、退出码 0；本地已有日志也包含该 PASS 文本。本轮按约定没有复跑验证器、重新计算下界或重新求解，未把该既有记录标为本轮新验证。四机路线的独立复核本轮亦未执行。
-
-当前结果不能表述为“Case1 三机不可行已在 Lean 内核中完整证明”，也不代表最少四机已经证明。入口 `three_routes_infeasible_of_certificate` 已连接路线、物理距离与预算，等待具体证书数值前提；四机见证和完整原题模型一致性仍需后续验证。
+剩余边界是四机可行见证尚未在 Lean 内核中形式化、JSON 与源码字面量的对应仍使用先前外部绑定检查，以及当前合法路线和精确覆盖条件与原题完整运行规则的对应。因此不将结果表述为全部原题规则下的纯 Lean `N_min = 4` 定理。

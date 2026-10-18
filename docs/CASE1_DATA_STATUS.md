@@ -1,5 +1,7 @@
 # Case1 固定实例绑定：证明覆盖与验收
 
+最新进展：具体证书数值和至多三机排除已在 [Case1 内核闭合报告](CASE1_KERNEL_CLOSURE_STATUS.md) 中完成。以下保留本阶段当时的结果与边界，未完成事项请以最新报告为准。
+
 后续进展：距离取整比较、工作时间预算及全部 2756 条弧的独立成本核对已完成，见 [距离与预算报告](CASE1_PHYSICAL_BUDGET_STATUS.md)。下文保留提交 `37e9f21b` 的阶段验收范围；其中未完成事项以新报告为准。
 
 日期：2026-10-18。源码：[Case1Data.lean](../LeanCompletion/UAV/Case1Data.lean)。

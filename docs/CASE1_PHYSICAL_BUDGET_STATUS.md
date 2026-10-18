@@ -1,5 +1,7 @@
 # Case1 距离取整与工作时间预算
 
+最新进展：具体证书数值和至多三机排除已在 [Case1 内核闭合报告](CASE1_KERNEL_CLOSURE_STATUS.md) 中完成。以下保留本阶段当时的结果与边界，未完成事项请以最新报告为准。
+
 日期：2026-10-18。本轮源码为 [Case1Distance.lean](../LeanCompletion/UAV/Case1Distance.lean)、[Case1Budget.lean](../LeanCompletion/UAV/Case1Budget.lean)，独立成本核对脚本为 [verify_case1_costs.py](../LeanCompletion/UAV/certificates/verify_case1_costs.py)。
 
 本次发布收录此前本地执行的编译与审计；发布前核对源码哈希，不将发布操作计为新的编译。固定验证环境及前序依赖的编译步骤见 [总证明报告](UAV_PROOF_RESULTS.md#验证环境与复现)。
