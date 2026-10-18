@@ -2,9 +2,9 @@
 
 更新日期：2026-10-18。本文区分各阶段实际执行的验证。本次发布汇总此前本地完成的检查，不将发布操作表述为新执行的 Lean 编译。
 
-本分支收录六个证明模块：[WeakDuality.lean](../LeanCompletion/UAV/WeakDuality.lean)、[Flow.lean](../LeanCompletion/UAV/Flow.lean)、[RouteToFlow.lean](../LeanCompletion/UAV/RouteToFlow.lean)、[TotalFlow.lean](../LeanCompletion/UAV/TotalFlow.lean)、[Connectivity.lean](../LeanCompletion/UAV/Connectivity.lean)、[LPBridge.lean](../LeanCompletion/UAV/LPBridge.lean)。均使用 `UAVProof` 及其子命名空间，复用固定版本的 Mathlib。
+本分支收录七个证明模块：[WeakDuality.lean](../LeanCompletion/UAV/WeakDuality.lean)、[Flow.lean](../LeanCompletion/UAV/Flow.lean)、[RouteToFlow.lean](../LeanCompletion/UAV/RouteToFlow.lean)、[TotalFlow.lean](../LeanCompletion/UAV/TotalFlow.lean)、[Connectivity.lean](../LeanCompletion/UAV/Connectivity.lean)、[LPBridge.lean](../LeanCompletion/UAV/LPBridge.lean)、[Case1Data.lean](../LeanCompletion/UAV/Case1Data.lean)。均使用 `UAVProof` 及其子命名空间，复用固定版本的 Mathlib。
 
-已完成任意有限机队的访问次数、基地出入次数、流量守恒、无自环、容量、连通性割，以及自然数边流到有理数 LP 的结构性衔接。入口定理 `UAVProof.LPBridge.legalFleet_weak_duality` 实际调用通用弱对偶。Case1 具体数据、物理距离及数值证书的实例连接尚未完成；详见 [LPBridge 覆盖说明与剩余问题](LP_BRIDGE_STATUS.md)。
+已完成任意有限机队的访问次数、基地出入次数、流量守恒、无自环、容量、连通性割，以及自然数边流到有理数 LP 的结构性衔接。`UAVProof.Case1Data.three_routes_weak_duality` 进一步用固定 Case1 数据调用 `LPBridge.legalFleet_weak_duality`，得到具体有理数表达式的路线成本下界。该表达式的数值求和、真实物理距离比较和预算矛盾尚未完成；详见 [Case1 固定实例验收报告](CASE1_DATA_STATUS.md)。
 
 ## 已证明的结果
 
@@ -126,6 +126,12 @@ totalRouteFlow(i,i) = 0,
 
 最终结论为 `certifiedBound ≤ routeCost`。容量、度和割约束由合法路线及精确访问覆盖推导，没有作为额外 LP 可行性假设传入。成本仍是抽象有理数，不能自动解释为 Case1 的真实欧氏距离。
 
+### 固定 Case1 数据：Case1Data.lean
+
+固定 53 个节点、72 次巡检、三条非空路线、106 个等式对偶系数及 32 个割与割乘子。行索引双射明确将 `Sum.inl i` 对应到 `eq_dual[i]`，将 `Sum.inr i` 对应到 `eq_dual[53+i]`。非自环弧集合的数量证明为 2756。模块逐个证明割的正需求见证、基地排除及乘子非正，然后实际调用通用机队弱对偶。
+
+17 个定理的完整列表、输入哈希、成本单位与复现步骤见 [Case1Data 报告](CASE1_DATA_STATUS.md)。JSON 与 Lean 字面量的对应由外部 Python 精确解析和生成区逐字核对，未将 JSON 解析本身形式化。成本函数采用整数平方距离及 `Nat.sqrt`，尚未证明它与真实欧氏距离的比较。
+
 ## 实际验证与公理审计
 
 ### 首轮记录（提交 01a1250c 的基础结果）
@@ -155,7 +161,7 @@ totalRouteFlow(i,i) = 0,
 
 检查使用已有工程和 Mathlib 缓存，没有重新编译 Mathlib，也不是全新环境或 GitHub CI 验证。本轮原始输出、审计副本与例子保留在本地忽略目录 `verification/runs/total-flow-20261018-134843/`。发布内容只含证明源码和整理后的结果说明，不含原始日志、`.olean` 或缓存。
 
-### 连通性割与 LPBridge 阶段记录（本次收录）
+### 连通性割与 LPBridge 阶段记录（提交 2e7df928 的结果）
 
 | 检查 | 实际结果 |
 | --- | --- |
@@ -168,14 +174,26 @@ totalRouteFlow(i,i) = 0,
 
 检查使用原工程与现有 Mathlib 缓存，未做全新环境或 GitHub CI 重放。原始记录分别保留在本地忽略目录 `verification/runs/connectivity-20261018-140331/` 和 `verification/runs/lp-bridge-20261018-141656/`，不随本次发布上传。
 
+### 固定 Case1 实例阶段记录（本次收录）
+
+| 检查 | 实际结果 |
+| --- | --- |
+| 最终 `Case1Data.lean` 编译及导入产物生成 | 均退出码 0，无警告。 |
+| 对该产物中的 17 个定理执行公理审计 | 退出码 0，依赖仅为 `propext`、`Classical.choice`、`Quot.sound` 的子集，无 `sorryAx` 或自定义公理。 |
+| 原 JSON 与生成字面量核对 | 退出码 0，覆盖坐标、需求、106 个等式系数、32 个割与乘子及割见证。 |
+| 两条方向相反的成本样例 | Lean 和 Python 均得到 `80613274` 个百万分之一公里单位。 |
+| 发布前源码核对 | 新源码和脚本与验收哈希一致，六个前序 Lean 模块保持不变。 |
+
+本次发布没有重跑 Lean，也没有重新计算证书下界。附加批量运行时导出已中止，不计为 PASS。原始记录保留在本地忽略目录 `verification/runs/case1-data-20261018/`，未上传。
+
 ## 验证环境与复现
 
 - Lean：`leanprover/lean4:v4.30.0-rc2`，Windows x86_64；Lean 提交 `3dc1a088b6d2d8eafe25a7cd7ec7b58d731bd7cc`。
 - Mathlib：`5450b53e5ddc75d46418fabb605edbf36bd0beb6`，已核对本地依赖的 HEAD。
-- 原验证工程：[jsp-001022-lean-extension](https://github.com/huam54925-cpu/jsp-001022-lean-extension/tree/e04a61f1be1219c27f43c0bf3182794654b57f99)。其 `lean-toolchain`、`lakefile.toml`、`lake-manifest.json` 与该提交一致。六个 UAV 源文件以本分支收录的版本为准。
-- 原工程的 Prim 依赖固定为 `a303f6bd23bb8f29a833d1d70327528359180995`；这六个源文件没有直接导入 Prim。
+- 原验证工程：[jsp-001022-lean-extension](https://github.com/huam54925-cpu/jsp-001022-lean-extension/tree/e04a61f1be1219c27f43c0bf3182794654b57f99)。其 `lean-toolchain`、`lakefile.toml`、`lake-manifest.json` 与该提交一致。七个 UAV 源文件以本分支收录的版本为准。
+- 原工程的 Prim 依赖固定为 `a303f6bd23bb8f29a833d1d70327528359180995`；这七个源文件没有直接导入 Prim。
 
-本分支没有另建 Lake 工程。复现时，使用上述固定版本的原验证工程并准备对应依赖与 Mathlib 编译缓存，将六个源文件复制到其 `LeanCompletion/UAV/` 目录，在该工程根目录执行以下命令。先生成导入所需的 `.olean`，避免只检查源文件却缺少下游模块可用的编译产物：
+本分支没有另建 Lake 工程。复现时，使用上述固定版本的原验证工程并准备对应依赖与 Mathlib 编译缓存，将七个源文件复制到其 `LeanCompletion/UAV/` 目录，在该工程根目录执行以下命令。先生成导入所需的 `.olean`，避免只检查源文件却缺少下游模块可用的编译产物：
 
 ```powershell
 New-Item -ItemType Directory -Force .lake/build/lib/lean/LeanCompletion/UAV | Out-Null
@@ -189,8 +207,10 @@ lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/TotalFlow.olean LeanCom
 if ($LASTEXITCODE -ne 0) { throw 'TotalFlow compilation failed' }
 lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/Connectivity.olean LeanCompletion/UAV/Connectivity.lean
 if ($LASTEXITCODE -ne 0) { throw 'Connectivity compilation failed' }
-lake env lean LeanCompletion/UAV/LPBridge.lean
+lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/LPBridge.olean LeanCompletion/UAV/LPBridge.lean
 if ($LASTEXITCODE -ne 0) { throw 'LPBridge compilation failed' }
+lake env lean LeanCompletion/UAV/Case1Data.lean
+if ($LASTEXITCODE -ne 0) { throw 'Case1Data compilation failed' }
 ```
 
 公理审计可在各文件的临时副本末尾追加对应定理的 `#print axioms UAVProof.<定理名>`，再执行 `lake env lean <副本路径>`。`LegalRoute` 下的定理需要使用 `UAVProof.LegalRoute.<定理名>`。全部定理名在上表列出；临时副本和输出应放在忽略目录中。示例核心审计指令为：
@@ -204,12 +224,13 @@ if ($LASTEXITCODE -ne 0) { throw 'LPBridge compilation failed' }
 #print axioms UAVProof.totalFlow_constraints
 #print axioms UAVProof.total_outCutFlow_ge_one
 #print axioms UAVProof.LPBridge.legalFleet_weak_duality
+#print axioms UAVProof.Case1Data.three_routes_weak_duality
 ```
 
 ## 尚未完成的证明衔接
 
-已完成合法路线到有理数 LP 弱对偶的通用结构性连接。仍需对齐 Case1 的具体节点编号、2756 条弧、106 个等式系数、32 个割、成本单位与距离取整下界，并连接具体证书值和 1155 公里预算。具体数值证书尚未在 Lean 内核中证明。排除至多三架实际工作时，还需处理少于三条非空路线的情形及精确覆盖约定。
+已完成合法路线到有理数 LP 弱对偶的通用结构性连接，以及 Case1 固定参数的实例化。仍需证明具体证书表达式的数值、成本与真实欧氏距离的比较，并连接 1155 公里预算。全量运行时成本比对未完成。排除至多三架实际工作时，还需处理少于三条非空路线的情形及精确覆盖约定。
 
 用户已报告 Case1 独立精确有理数验证器输出 `Independent exact-rational certificate PASS`、退出码 0；本地已有日志也包含该 PASS 文本。本轮按约定没有复跑验证器、重新计算下界或重新求解，未把该既有记录标为本轮新验证。四机路线的独立复核本轮亦未执行。
 
-当前结果不能表述为“Case1 三机不可行已在 Lean 内核中完整证明”，也不代表全局最优性已经证明。本轮工作止于通用 `certifiedBound ≤ routeCost` 的结构性连接，等待具体实例衔接。
+当前结果不能表述为“Case1 三机不可行已在 Lean 内核中完整证明”，也不代表全局最优性已经证明。本轮工作止于固定 Case1 三机参数下的 `certificateBoundUnits ≤ routeCost ... costUnits`，等待数值与物理模型衔接。

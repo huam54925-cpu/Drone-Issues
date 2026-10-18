@@ -2,6 +2,8 @@
 
 日期：2026-10-18。源码：[LPBridge.lean](../LeanCompletion/UAV/LPBridge.lean)。
 
+后续进度：固定 Case1 数据绑定、32 个割合法性和具体三机弱对偶调用已由 `Case1Data.lean` 完成，见 [Case1 固定实例验收报告](CASE1_DATA_STATUS.md)。本文保留 LPBridge 阶段的验证与停止点，下文“剩余问题”描述该阶段当时的状态。
+
 本模块将合法有限机队生成的自然数边流转换为有理数 LP 变量，并实际调用已有的 `UAVProof.finite_weak_duality`。入口定理是 `UAVProof.LPBridge.legalFleet_weak_duality`。本轮不代入 Case1 的数值证书，不核验四机见证。本次发布收录此前已完成的本地编译与审计结果，发布操作本身不是一次新的编译检查。
 
 ## 定义与索引约定
