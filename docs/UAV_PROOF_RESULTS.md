@@ -1,10 +1,10 @@
-# UAV 通用弱对偶、合法路线与有限机队边流：证明结果
+# UAV 合法机队、连通性割与有理数弱对偶：证明结果
 
-更新日期：2026-10-18。本文区分首轮已记录的验证和本轮新执行的检查。
+更新日期：2026-10-18。本文区分各阶段实际执行的验证。本次发布汇总此前本地完成的检查，不将发布操作表述为新执行的 Lean 编译。
 
-本分支收录四个证明模块：[WeakDuality.lean](../LeanCompletion/UAV/WeakDuality.lean)、[Flow.lean](../LeanCompletion/UAV/Flow.lean)、[RouteToFlow.lean](../LeanCompletion/UAV/RouteToFlow.lean)、[TotalFlow.lean](../LeanCompletion/UAV/TotalFlow.lean)。均使用命名空间 `UAVProof`。后两者依次导入前面的路线证明，复用固定版本的 Mathlib。
+本分支收录六个证明模块：[WeakDuality.lean](../LeanCompletion/UAV/WeakDuality.lean)、[Flow.lean](../LeanCompletion/UAV/Flow.lean)、[RouteToFlow.lean](../LeanCompletion/UAV/RouteToFlow.lean)、[TotalFlow.lean](../LeanCompletion/UAV/TotalFlow.lean)、[Connectivity.lean](../LeanCompletion/UAV/Connectivity.lean)、[LPBridge.lean](../LeanCompletion/UAV/LPBridge.lean)。均使用 `UAVProof` 及其子命名空间，复用固定版本的 Mathlib。
 
-本轮完成任意有限机队的访问次数、基地出入次数、流量守恒、无自环和容量约束。入口定理为 `UAVProof.totalFlow_constraints`。连通性割和具体数值证书到 Lean 的连接尚未完成。
+已完成任意有限机队的访问次数、基地出入次数、流量守恒、无自环、容量、连通性割，以及自然数边流到有理数 LP 的结构性衔接。入口定理 `UAVProof.LPBridge.legalFleet_weak_duality` 实际调用通用弱对偶。Case1 具体数据、物理距离及数值证书的实例连接尚未完成；详见 [LPBridge 覆盖说明与剩余问题](LP_BRIDGE_STATUS.md)。
 
 ## 已证明的结果
 
@@ -46,7 +46,7 @@ q(e) = c(e) - Σ_i y(i) A(i,e) + Σ_k z(k) C(k,e),
 
 端点计数使用 `Option.toList.count`，因此空路线也有明确语义。归纳证明中的 `hsingle` 显式将单元素列表计数化为对应的 0/1 指示函数，再由 `omega` 使用归纳假设。闭合路线定理直接利用端点恒等式和首尾相等条件消去端点项，没有额外假设流量守恒。
 
-`Flow.lean` 的流量求和包括所有顶点。新增模块证明合法路线及其总边流的对角项均为零；本轮没有另外编写使用 `Finset.univ.erase i` 的求和接口。
+`Flow.lean` 的流量求和包括所有顶点。后续模块证明合法路线及其总边流的对角项均为零；`LPBridge.lean` 据此证明仅对非自环弧求和与完整顶点对求和一致。
 
 ### 单条合法路线：RouteToFlow.lean
 
@@ -71,7 +71,7 @@ q(e) = c(e) - Σ_i y(i) A(i,e) + Σ_k z(k) C(k,e),
 
 `ks : Finset ι` 是无人机编号集合，`routes : ι → LegalRoute depot` 是合法路线映射。`totalRouteFlow ks routes i j` 对选中的编号求和，而不是将路线列表去重；两架无人机执行相同路线仍计为两条路线。`totalVisitCount` 是对应巡检列表出现次数的总和。
 
-本轮新文件包含以下 15 个定理，均位于 `UAVProof` 命名空间：
+该文件包含以下 15 个定理，均位于 `UAVProof` 命名空间：
 
 | 定理 | 结论 |
 | --- | --- |
@@ -104,6 +104,28 @@ totalRouteFlow(i,i) = 0,
 
 取 `ι = Fin m`、`ks = Finset.univ` 就得到任意 `m` 的版本，三机取 `m = 3`。空机队也被覆盖。这里 `m` 表示执行非空任务的路线数量，不包括空闲无人机；覆盖条件要求次数恰好相等，不能仅凭“至少访问规定次数”使用规定度结论。
 
+### 连通性割：Connectivity.lean
+
+该模块包含七个定理。出割只计起点属于集合、终点在集合外的有向边。
+
+| 定理 | 结论 |
+| --- | --- |
+| `route_exit_exists` | 有限列表访问集合且终点在集合外，则存在离开集合的相邻边；无需起点在集合外。 |
+| `route_exit_flow_pos` | 所见证的离开边计数至少为 1。 |
+| `arc_le_outCutFlow` | 任一跨割自然数边流不超过整个出割流量。 |
+| `LegalRoute.outCutFlow_ge_one` | 合法路线实际访问不含基地的集合，则出割流至少为 1。 |
+| `total_outCutFlow_ge_one_of_visit` | 有限机队中有一条选中路线访问集合，即可得到总出割下界。 |
+| `total_outCutFlow_ge_one_of_positive_visit` | 集合内某点的实际访问次数为正，即可提供访问路线见证。 |
+| `total_outCutFlow_ge_one` | 精确覆盖且非空集合各点需求为正、集合不含基地时，总出割流至少为 1。 |
+
+非空集合本身不足以推出割下界；实际访问或正需求见证不可省略。后续 LP 接口采用集合内至少一个正需求节点的条件，不要求集合内每个节点的需求都为正。
+
+### 有理数 LP 衔接：LPBridge.lean
+
+九个定理完成非自环弧求和、出入度矩阵、割矩阵、自然数到有理数的容量转换、目标函数与实际路线按边计费之和的等式，并实际应用 `finite_weak_duality`。完整定义、定理清单和前提见 [LPBridge 说明](LP_BRIDGE_STATUS.md)。
+
+最终结论为 `certifiedBound ≤ routeCost`。容量、度和割约束由合法路线及精确访问覆盖推导，没有作为额外 LP 可行性假设传入。成本仍是抽象有理数，不能自动解释为 Case1 的真实欧氏距离。
+
 ## 实际验证与公理审计
 
 ### 首轮记录（提交 01a1250c 的基础结果）
@@ -119,7 +141,7 @@ totalRouteFlow(i,i) = 0,
 
 `route_endpoint_count_balance` 的公理依赖为 `propext`、`Quot.sound`。其余七个定理的公理依赖均为 `propext`、`Classical.choice`、`Quot.sound`，没有额外自定义公理依赖。
 
-### 本轮新增模块检查
+### 单机与总边流阶段记录（提交 bf1b2362 的结果）
 
 | 检查 | 实际结果 |
 | --- | --- |
@@ -133,25 +155,42 @@ totalRouteFlow(i,i) = 0,
 
 检查使用已有工程和 Mathlib 缓存，没有重新编译 Mathlib，也不是全新环境或 GitHub CI 验证。本轮原始输出、审计副本与例子保留在本地忽略目录 `verification/runs/total-flow-20261018-134843/`。发布内容只含证明源码和整理后的结果说明，不含原始日志、`.olean` 或缓存。
 
+### 连通性割与 LPBridge 阶段记录（本次收录）
+
+| 检查 | 实际结果 |
+| --- | --- |
+| 最终 `Connectivity.lean` 编译及完整源码副本审计 | 均退出码 0，无警告；七个定理公理检查与十个边界例子通过。 |
+| 最终 `LPBridge.lean` 编译及完整源码副本审计 | 均退出码 0，无警告；九个定理公理检查、15 个例子及覆盖条件证明通过。 |
+| 新增 16 个定理的公理依赖 | 均仅为 `propext`、`Classical.choice`、`Quot.sound`，无 `sorryAx` 或自定义公理。 |
+| 发布前源码一致性 | 两个新增模块与各自最终审计副本的源码前缀一致；此前四个已发布模块未修改。 |
+
+连通性割例子覆盖重复访问、相同路线分别计数，以及遗漏条件时的反例。LPBridge 的两节点例子使用非对称成本、非零对偶乘子和负剩余成本修正，通过入口定理取得下界 9，实际路线成本为 10。
+
+检查使用原工程与现有 Mathlib 缓存，未做全新环境或 GitHub CI 重放。原始记录分别保留在本地忽略目录 `verification/runs/connectivity-20261018-140331/` 和 `verification/runs/lp-bridge-20261018-141656/`，不随本次发布上传。
+
 ## 验证环境与复现
 
 - Lean：`leanprover/lean4:v4.30.0-rc2`，Windows x86_64；Lean 提交 `3dc1a088b6d2d8eafe25a7cd7ec7b58d731bd7cc`。
 - Mathlib：`5450b53e5ddc75d46418fabb605edbf36bd0beb6`，已核对本地依赖的 HEAD。
-- 原验证工程：[jsp-001022-lean-extension](https://github.com/huam54925-cpu/jsp-001022-lean-extension/tree/e04a61f1be1219c27f43c0bf3182794654b57f99)。其 `lean-toolchain`、`lakefile.toml`、`lake-manifest.json` 与该提交一致。四个 UAV 源文件以本分支收录的版本为准。
-- 原工程的 Prim 依赖固定为 `a303f6bd23bb8f29a833d1d70327528359180995`；这四个源文件没有直接导入 Prim。
+- 原验证工程：[jsp-001022-lean-extension](https://github.com/huam54925-cpu/jsp-001022-lean-extension/tree/e04a61f1be1219c27f43c0bf3182794654b57f99)。其 `lean-toolchain`、`lakefile.toml`、`lake-manifest.json` 与该提交一致。六个 UAV 源文件以本分支收录的版本为准。
+- 原工程的 Prim 依赖固定为 `a303f6bd23bb8f29a833d1d70327528359180995`；这六个源文件没有直接导入 Prim。
 
-本分支没有另建 Lake 工程。复现时，使用上述固定版本的原验证工程并准备对应依赖与 Mathlib 编译缓存，将四个源文件复制到其 `LeanCompletion/UAV/` 目录，在该工程根目录执行以下命令。先生成导入所需的 `.olean`，避免只检查源文件却缺少下游模块可用的编译产物：
+本分支没有另建 Lake 工程。复现时，使用上述固定版本的原验证工程并准备对应依赖与 Mathlib 编译缓存，将六个源文件复制到其 `LeanCompletion/UAV/` 目录，在该工程根目录执行以下命令。先生成导入所需的 `.olean`，避免只检查源文件却缺少下游模块可用的编译产物：
 
 ```powershell
-lake env lean LeanCompletion/UAV/WeakDuality.lean
-if ($LASTEXITCODE -ne 0) { throw 'WeakDuality compilation failed' }
 New-Item -ItemType Directory -Force .lake/build/lib/lean/LeanCompletion/UAV | Out-Null
+lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/WeakDuality.olean LeanCompletion/UAV/WeakDuality.lean
+if ($LASTEXITCODE -ne 0) { throw 'WeakDuality compilation failed' }
 lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/Flow.olean LeanCompletion/UAV/Flow.lean
 if ($LASTEXITCODE -ne 0) { throw 'Flow compilation failed' }
 lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/RouteToFlow.olean LeanCompletion/UAV/RouteToFlow.lean
 if ($LASTEXITCODE -ne 0) { throw 'RouteToFlow compilation failed' }
-lake env lean LeanCompletion/UAV/TotalFlow.lean
+lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/TotalFlow.olean LeanCompletion/UAV/TotalFlow.lean
 if ($LASTEXITCODE -ne 0) { throw 'TotalFlow compilation failed' }
+lake env lean -o .lake/build/lib/lean/LeanCompletion/UAV/Connectivity.olean LeanCompletion/UAV/Connectivity.lean
+if ($LASTEXITCODE -ne 0) { throw 'Connectivity compilation failed' }
+lake env lean LeanCompletion/UAV/LPBridge.lean
+if ($LASTEXITCODE -ne 0) { throw 'LPBridge compilation failed' }
 ```
 
 公理审计可在各文件的临时副本末尾追加对应定理的 `#print axioms UAVProof.<定理名>`，再执行 `lake env lean <副本路径>`。`LegalRoute` 下的定理需要使用 `UAVProof.LegalRoute.<定理名>`。全部定理名在上表列出；临时副本和输出应放在忽略目录中。示例核心审计指令为：
@@ -163,12 +202,14 @@ if ($LASTEXITCODE -ne 0) { throw 'TotalFlow compilation failed' }
 #print axioms UAVProof.total_no_diagonal
 #print axioms UAVProof.total_routeFlow_bounds
 #print axioms UAVProof.totalFlow_constraints
+#print axioms UAVProof.total_outCutFlow_ge_one
+#print axioms UAVProof.LPBridge.legalFleet_weak_duality
 ```
 
 ## 尚未完成的证明衔接
 
-已完成合法单机路线到访问量的推导，以及有限机队到自然数边流的度、守恒、无自环和容量约束。以下工作仍未完成：连通性割；将自然数边流嵌入有理数 LP 并对齐节点编号、弧索引、单位和目标函数系数；将 Case1 的具体实例与弱对偶定理前提逐项连接；具体数值证书在 Lean 内核中的证明。
+已完成合法路线到有理数 LP 弱对偶的通用结构性连接。仍需对齐 Case1 的具体节点编号、2756 条弧、106 个等式系数、32 个割、成本单位与距离取整下界，并连接具体证书值和 1155 公里预算。具体数值证书尚未在 Lean 内核中证明。排除至多三架实际工作时，还需处理少于三条非空路线的情形及精确覆盖约定。
 
 用户已报告 Case1 独立精确有理数验证器输出 `Independent exact-rational certificate PASS`、退出码 0；本地已有日志也包含该 PASS 文本。本轮按约定没有复跑验证器、重新计算下界或重新求解，未把该既有记录标为本轮新验证。四机路线的独立复核本轮亦未执行。
 
-当前结果不能表述为“Case1 三机不可行已在 Lean 内核中完整证明”，也不代表全局最优性已经证明。本轮工作止于总边流的度、无自环和容量约束，不包含连通性割。
+当前结果不能表述为“Case1 三机不可行已在 Lean 内核中完整证明”，也不代表全局最优性已经证明。本轮工作止于通用 `certifiedBound ≤ routeCost` 的结构性连接，等待具体实例衔接。
